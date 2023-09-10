@@ -25,8 +25,6 @@ def expTheorethicalProbability(x1, x2, lambd):
 
 def uniformTheorethicalProbability(x1, x2, a, b):
     return (1 / (b - a)) * (x2 - x1)
-
-def gaussianTheorethicalProbability(x1, x2, mu, sigma):
     return ((1 / (math.sqrt(2 * math.pi)) * sigma) * math.exp(-((x2 - mu) ** 2) / (2 * (sigma ** 2)))) - \
         ((1 / (math.sqrt(2 * math.pi)) * sigma) * math.exp(-((x1 - mu) ** 2) / (2 * (sigma ** 2))))
 
@@ -39,7 +37,7 @@ def chi_square(num_occurences, theoretical_probabilities):
     
     return chi_squared
 
-def task1(lambd=1.0):
+def task1(lambd):
     num_list = []
     for i in range(10000):
         uniform_random_num = rand.uniform(0.0, 1.0)
@@ -51,7 +49,7 @@ def task1(lambd=1.0):
     print(f'Mean: {mean}')
     print(f'Variance: {variance}')
     
-    chi_squared_lambd = (mean + math.sqrt(variance)) / 2
+    chi_squared_lambd = 1 / mean
     
     k = 20
     maximum, minimum = max(num_list), min(num_list)
@@ -74,8 +72,6 @@ def task1(lambd=1.0):
         theoretical_probabilities[i] = expTheorethicalProbability(minimum + i * interval_length, 
                                                                       minimum + (i + 1) * interval_length, 
                                                                       chi_squared_lambd)
-        
-    print(sum(theoretical_probabilities))
     
     # calculate chi squared
     significance_level = 1 - 0.05
@@ -121,28 +117,25 @@ def task2(a, sigma):
     num_occurences[k - 1] += 1
     
     # calculate theoretical probabilities
-    for i in range(0, k):
-        theoretical_probabilities[i] = gaussianTheorethicalProbability(minimum + i * interval_length, 
-                                                                      minimum + (i + 1) * interval_length, 
-                                                                      mu, sigma)
-    
-    print(theoretical_probabilities)
-    
+    for i in range(0, k):  
+        theoretical_probabilities[i] = scipy_stats.norm.cdf(minimum + (i + 1) * interval_length, mu, sigma) - \
+            scipy_stats.norm.cdf(minimum + i * interval_length, mu, sigma)
+            
     # calculate chi squared
     significance_level = 1 - 0.05
-    degree_freedom = k - 1 - 1
+    degree_freedom = k - 1 - 2
     chi_squared = chi_square(num_occurences, theoretical_probabilities)
     print('Chi squared:', chi_squared)
     print(f'Chi squared critical value({significance_level}, {degree_freedom}):',
                 f'{scipy_stats.chi2.ppf(significance_level, degree_freedom)}')
     
-    build_hist(num_list)
+    # build_hist(num_list)
     
 def task3(a, c):
     z = 7
     num_list = []
     for i in range(10000):
-        z = a * (z % c)
+        z = (a * z) % c
         num_list.append(z / c)
         
     mean = getMean(num_list)
@@ -175,7 +168,7 @@ def task3(a, c):
     
     # calculate chi squared
     significance_level = 1 - 0.05
-    degree_freedom = k - 1 - 1
+    degree_freedom = k - 1 - 2
     chi_squared = chi_square(num_occurences, theoretical_probabilities)
     print('Chi squared:', chi_squared)
     print(f'Chi squared critical value({significance_level}, {degree_freedom}):',
@@ -183,6 +176,6 @@ def task3(a, c):
     
     build_hist(num_list)
 
-task1(3)
-# task2(1, 1)
-# task3(5 ** 13, 2 ** 31)
+# task1(3)
+# task2(100, 100)
+task3(5 ** 11, 2 ** 29)
