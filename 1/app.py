@@ -129,10 +129,10 @@ def task2(a, sigma):
     print(f'Chi squared critical value({significance_level}, {degree_freedom}):',
                 f'{scipy_stats.chi2.ppf(significance_level, degree_freedom)}')
     
-    # build_hist(num_list)
+    build_hist(num_list)
     
 def task3(a, c):
-    z = 7
+    z = 15
     num_list = []
     for i in range(10000):
         z = (a * z) % c
