@@ -1,4 +1,4 @@
-package org.example.model;
+package org.example.bank;
 
 import java.util.*;
 
@@ -6,33 +6,33 @@ public class Process extends Element {
     private int queue, maxqueue, failure;
     private int workersCount;
     private PriorityQueue<Double> workersTimeNext;
-    private ChooseRouteBy chooseRouteBy;
-    private List<Element> nextElements;
-    private List<Double> nextElementsProbabilities;
-    private Map<Integer, Process> nextProcessesPriorities;
-    private double meanQueue;
-    private double meanLoad;
+    private double meanQueue, meanLoad;
+    private double waitStart, waitTime;
+    private int swapThreshold, swapsCount;
+    private List<Process> otherLanes;
 
-    public Process(double delay, int workersCount, ChooseRouteBy chooseRouteBy) {
-        super(delay);
+    public Process(double delay, int workersCount, ChooseRouteBy chooseRouteBy, int swapThreshold) {
+        super(delay, chooseRouteBy);
         super.setTnext(Double.MAX_VALUE);
         this.workersCount = workersCount;
         this.workersTimeNext = new PriorityQueue<>();
-        this.nextElements = new ArrayList<>();
-        this.chooseRouteBy = chooseRouteBy;
-        if (chooseRouteBy.equals(ChooseRouteBy.PROBABILITY)) {
-            this.nextElementsProbabilities = new ArrayList<>();
-        } else if (chooseRouteBy.equals(ChooseRouteBy.PRIORITY)) {
-            this.nextProcessesPriorities = new TreeMap<>();
-        }
+        this.otherLanes = new ArrayList<>();
         queue = 0;
         maxqueue = Integer.MAX_VALUE;
         meanQueue = 0.0;
         meanLoad = 0.0;
+        waitTime = 0.0;
+        waitStart = 0.0;
+        this.swapThreshold = swapThreshold;
+        swapsCount = 0;
     }
 
     @Override
     public void inAct() {
+        if (super.getState() == 0) {
+            waitTime += super.getTcurr() - waitStart;
+        }
+
         if (super.getState() < getWorkersCount()) {
             super.setState(super.getState() + 1);
             addTimeNext(super.getTcurr() + super.getDelay());
@@ -60,16 +60,32 @@ public class Process extends Element {
             setTnext();
         }
 
+        Element nextElement = null;
         switch (chooseRouteBy) {
-            case PROBABILITY -> {
-                Element element = chooseNextElementByProbability();
-                if (element != null)
-                    element.inAct();
-            }
-            case PRIORITY -> {
-                Process process = chooseNextElementByPriority();
-                if (process != null)
-                    process.inAct();
+            case PROBABILITY -> nextElement = chooseNextElementByProbability();
+            case PRIORITY -> nextElement = chooseNextElementByPriority();
+        }
+
+        if (super.getState() == 0) {
+            waitStart = super.getTcurr();
+        }
+
+        for (Process otherLane : otherLanes) {
+            otherLane.checkForOtherLanesQueues();
+        }
+
+        if (nextElement != null)
+            nextElement.inAct();
+    }
+
+    private void checkForOtherLanesQueues() {
+        for (Process otherLane : otherLanes) {
+            if (this.getQueue() - otherLane.getQueue() >= swapThreshold) {
+                this.setQueue(this.getQueue() - 1);
+                otherLane.setQueue(otherLane.getQueue() + 1);
+
+                swapsCount++;
+                break;
             }
         }
     }
@@ -113,13 +129,25 @@ public class Process extends Element {
     @Override
     public void printInfo() {
         super.printInfo();
-        System.out.println("failure = " + this.getFailure());
+        System.out.println("failure = " + this.getFailure() + "; queue = " + this.getQueue());
     }
 
     @Override
     public void doStatistics(double delta) {
         meanQueue += queue * delta;
         meanLoad += super.getState() * delta;
+    }
+
+    public int getSwapsCount() {
+        return swapsCount;
+    }
+
+    public double getWaitTime() {
+        return waitTime;
+    }
+
+    public void addOtherLanes(Process process) {
+        otherLanes.add(process);
     }
 
     public void setTnext() {
@@ -139,20 +167,6 @@ public class Process extends Element {
 
     public void addTimeNext(double value) {
         this.workersTimeNext.add(value);
-    }
-
-    public void addNextElement(Element element, double probability) {
-        if (chooseRouteBy.equals(ChooseRouteBy.PROBABILITY)) {
-            nextElements.add(element);
-            nextElementsProbabilities.add(probability);
-        }
-    }
-
-    public void addNextElement(Process process, int priority) {
-        if (chooseRouteBy.equals(ChooseRouteBy.PRIORITY)) {
-            nextElements.add(process);
-            nextProcessesPriorities.put(priority, process);
-        }
     }
 
     private Process chooseNextElementByPriority() {

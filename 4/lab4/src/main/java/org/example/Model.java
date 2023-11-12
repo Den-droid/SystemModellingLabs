@@ -1,31 +1,33 @@
-package org.example.model;
+package org.example;
 
 import java.util.ArrayList;
 
 public class Model {
     private final ArrayList<Element> list;
     double tnext, tcurr;
-    int event;
+    Element event;
+    int eventCount;
 
     public Model(ArrayList<Element> elements) {
         list = elements;
         tnext = 0.0;
-        event = 0;
         tcurr = tnext;
     }
 
     public void simulate(double time) {
         while (tcurr < time) {
+            eventCount++;
+
             tnext = Double.MAX_VALUE;
             for (Element e : list) {
                 if (e.getTnext() < tnext) {
                     tnext = e.getTnext();
-                    event = e.getId();
+                    event = e;
                 }
             }
-            System.out.println("\nIt's time for event in " +
-                    list.get(event).getName() +
-                    ", time = " + tnext);
+//            System.out.println("\nIt's time for event in " +
+//                    event.getName() +
+//                    ", time = " + tnext);
             for (Element e : list) {
                 e.doStatistics(tnext - tcurr);
             }
@@ -33,15 +35,18 @@ public class Model {
             for (Element e : list) {
                 e.setTcurr(tcurr);
             }
-            list.get(event).outAct();
+            event.outAct();
             for (Element e : list) {
                 if (e.getTnext() == tcurr) {
+                    eventCount++;
+
                     e.outAct();
                 }
             }
-            printInfo();
+//            printInfo();
         }
-        printResult();
+        System.out.println("Event count: " + eventCount);
+//        printResult();
     }
 
     public void printInfo() {
@@ -54,8 +59,7 @@ public class Model {
         System.out.println("\n-------------RESULTS-------------");
         for (Element e : list) {
             e.printResult();
-            if (e instanceof Process) {
-                Process p = (Process) e;
+            if (e instanceof Process p) {
                 System.out.println("Process: " + p.getName());
                 System.out.println("mean length of queue = " +
                         p.getMeanQueue() / tcurr
@@ -63,7 +67,6 @@ public class Model {
                         p.getMeanLoad() / tcurr
                         + "\nfailure probability = " +
                         p.getFailure() / (double) (p.getFailure() + p.getQuantity()));
-                System.out.println(p.getFailure() + " " + p.getQuantity());
                 System.out.println("\n");
             }
         }

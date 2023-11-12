@@ -1,4 +1,4 @@
-package org.example.model;
+package org.example.bank;
 
 import java.util.ArrayList;
 
@@ -51,21 +51,27 @@ public class Model {
     }
 
     public void printResult() {
+        int totalQuantity = 0;
+        double totalClientsInBank = 0, totalWaitTime = 0;
+
         System.out.println("\n-------------RESULTS-------------");
         for (Element e : list) {
-            e.printResult();
-            if (e instanceof Process) {
-                Process p = (Process) e;
+            if (e instanceof Process p) {
+                totalClientsInBank += p.getMeanLoad() + p.getMeanQueue();
+                totalWaitTime += p.getWaitTime();
+                totalQuantity += p.getQuantity();
+
                 System.out.println("Process: " + p.getName());
-                System.out.println("mean length of queue = " +
-                        p.getMeanQueue() / tcurr
-                        + "\nmean load of process = " +
-                        p.getMeanLoad() / tcurr
-                        + "\nfailure probability = " +
-                        p.getFailure() / (double) (p.getFailure() + p.getQuantity()));
-                System.out.println(p.getFailure() + " " + p.getQuantity());
+                System.out.println("1. Average load of cashier: " + (p.getMeanLoad() / tcurr));
+                System.out.println("5. Average queue of cashier: " + (p.getMeanQueue() / tcurr));
+                System.out.println("6. Average failures: " + (p.getFailure() / (double) (p.getQuantity() + p.getFailure())));
+                System.out.println("7. Swaps count: " + p.getSwapsCount());
                 System.out.println("\n");
             }
         }
+
+        System.out.println("2. Average amount of clients in bank: " + totalClientsInBank / tcurr);
+        System.out.println("3. Average out time in bank: " + (totalWaitTime / totalQuantity));
+        System.out.println("4. Average client time in bank: " + (totalClientsInBank / totalQuantity));
     }
 }

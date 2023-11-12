@@ -1,4 +1,4 @@
-package org.example.model;
+package org.example.hospital;
 
 import java.util.ArrayList;
 
@@ -54,8 +54,7 @@ public class Model {
         System.out.println("\n-------------RESULTS-------------");
         for (Element e : list) {
             e.printResult();
-            if (e instanceof Process) {
-                Process p = (Process) e;
+            if (e instanceof Process p) {
                 System.out.println("Process: " + p.getName());
                 System.out.println("mean length of queue = " +
                         p.getMeanQueue() / tcurr
@@ -63,7 +62,6 @@ public class Model {
                         p.getMeanLoad() / tcurr
                         + "\nfailure probability = " +
                         p.getFailure() / (double) (p.getFailure() + p.getQuantity()));
-                System.out.println(p.getFailure() + " " + p.getQuantity());
                 System.out.println("\n");
             }
         }
